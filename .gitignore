@@ -1,0 +1,37 @@
+# Python cache and build output
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+build/
+dist/
+*.egg-info/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local runtime configuration
+config.json
+*.log
+
+# Local development notes and editor files
+IMPROVEMENTS.md
+.env
+.env.*
+.idea/
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
