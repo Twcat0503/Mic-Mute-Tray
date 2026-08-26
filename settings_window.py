@@ -1,16 +1,35 @@
 """Settings window."""
 
 import os
+import sys
 import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from typing import Callable, Optional
 
-import keyboard
-
 import startup_manager
 from config_manager import ConfigManager
 from hotkey_manager import HotkeyManager
+
+IS_MACOS = sys.platform == "darwin"
+
+if IS_MACOS:
+    import mac_keycodes
+else:
+    import keyboard
+
+# macOS registers global hotkeys through Carbon, which only accepts a key code
+# plus modifier flags. Picking them explicitly keeps the dialog to shortcuts
+# the system can actually register.
+HEADING_FONT = ("SF Pro Text", 12, "bold") if IS_MACOS else ("Segoe UI", 10, "bold")
+AUTOSTART_LABEL = "Start at login" if IS_MACOS else "Start with Windows"
+_ANY_FILE = "*" if IS_MACOS else "*.*"
+
+IMAGE_FILETYPES = [
+    ("Image files", ("*.png", "*.ico", "*.bmp")),
+    ("All files", _ANY_FILE),
+]
+SOUND_FILETYPES = [("WAV files", "*.wav"), ("All files", _ANY_FILE)]
 
 
 class SettingsWindow(tk.Toplevel):
@@ -20,7 +39,7 @@ class SettingsWindow(tk.Toplevel):
         self,
         parent: tk.Misc,
         config: ConfigManager,
-        hotkey_mgr: HotkeyManager,
+        hotkey_mgr: Optional[HotkeyManager] = None,
         on_close: Optional[Callable] = None,
     ):
         super().__init__(parent)
@@ -45,7 +64,7 @@ class SettingsWindow(tk.Toplevel):
 
         row = 0
 
-        ttk.Label(main, text="Hotkey", font=("Segoe UI", 10, "bold")).grid(
+        ttk.Label(main, text="Hotkey", font=HEADING_FONT).grid(
             row=row,
             column=0,
             columnspan=3,
@@ -54,28 +73,7 @@ class SettingsWindow(tk.Toplevel):
         )
         row += 1
 
-        ttk.Label(main, text="Toggle microphone").grid(
-            row=row,
-            column=0,
-            sticky="w",
-            **pad,
-        )
-        self._hotkey_var = tk.StringVar()
-        self._hotkey_entry = ttk.Entry(
-            main,
-            textvariable=self._hotkey_var,
-            width=22,
-            state="readonly",
-        )
-        self._hotkey_entry.grid(row=row, column=1, sticky="ew", **pad)
-        self._record_btn = ttk.Button(
-            main,
-            text="Record",
-            width=8,
-            command=self._start_record,
-        )
-        self._record_btn.grid(row=row, column=2, **pad)
-        row += 1
+        row = self._build_hotkey_rows(main, row, pad)
 
         ttk.Separator(main, orient="horizontal").grid(
             row=row,
@@ -86,7 +84,7 @@ class SettingsWindow(tk.Toplevel):
         )
         row += 1
 
-        ttk.Label(main, text="Tray Icons", font=("Segoe UI", 10, "bold")).grid(
+        ttk.Label(main, text="Tray Icons", font=HEADING_FONT).grid(
             row=row,
             column=0,
             columnspan=3,
@@ -97,22 +95,18 @@ class SettingsWindow(tk.Toplevel):
 
         self._on_icon_var = tk.StringVar()
         self._off_icon_var = tk.StringVar()
-        self._add_file_row(
-            main,
-            row,
-            "Unmuted icon",
-            self._on_icon_var,
-            [("Image files", "*.png;*.ico;*.bmp"), ("All files", "*.*")],
-        )
+        self._add_file_row(main, row, "Unmuted icon", self._on_icon_var, IMAGE_FILETYPES)
         row += 1
-        self._add_file_row(
-            main,
-            row,
-            "Muted icon",
-            self._off_icon_var,
-            [("Image files", "*.png;*.ico;*.bmp"), ("All files", "*.*")],
-        )
+        self._add_file_row(main, row, "Muted icon", self._off_icon_var, IMAGE_FILETYPES)
         row += 1
+
+        if IS_MACOS:
+            ttk.Label(
+                main,
+                text="Leave empty to use the system microphone symbol.",
+                foreground="gray40",
+            ).grid(row=row, column=0, columnspan=3, sticky="w", padx=10)
+            row += 1
 
         ttk.Separator(main, orient="horizontal").grid(
             row=row,
@@ -123,7 +117,7 @@ class SettingsWindow(tk.Toplevel):
         )
         row += 1
 
-        ttk.Label(main, text="Sounds", font=("Segoe UI", 10, "bold")).grid(
+        ttk.Label(main, text="Sounds", font=HEADING_FONT).grid(
             row=row,
             column=0,
             columnspan=3,
@@ -134,21 +128,9 @@ class SettingsWindow(tk.Toplevel):
 
         self._on_sound_var = tk.StringVar()
         self._off_sound_var = tk.StringVar()
-        self._add_file_row(
-            main,
-            row,
-            "Unmute sound",
-            self._on_sound_var,
-            [("WAV files", "*.wav"), ("All files", "*.*")],
-        )
+        self._add_file_row(main, row, "Unmute sound", self._on_sound_var, SOUND_FILETYPES)
         row += 1
-        self._add_file_row(
-            main,
-            row,
-            "Mute sound",
-            self._off_sound_var,
-            [("WAV files", "*.wav"), ("All files", "*.*")],
-        )
+        self._add_file_row(main, row, "Mute sound", self._off_sound_var, SOUND_FILETYPES)
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(
@@ -163,7 +145,7 @@ class SettingsWindow(tk.Toplevel):
         self._autostart_var = tk.BooleanVar()
         ttk.Checkbutton(
             main,
-            text="Start with Windows",
+            text=AUTOSTART_LABEL,
             variable=self._autostart_var,
         ).grid(row=row, column=0, columnspan=3, sticky="w", **pad)
         row += 1
@@ -189,6 +171,99 @@ class SettingsWindow(tk.Toplevel):
         )
 
         main.columnconfigure(1, weight=1)
+
+    def _build_hotkey_rows(self, main, row: int, pad: dict) -> int:
+        """Build the platform's hotkey controls and return the next row."""
+        self._hotkey_var = tk.StringVar()
+
+        if not IS_MACOS:
+            ttk.Label(main, text="Toggle microphone").grid(
+                row=row,
+                column=0,
+                sticky="w",
+                **pad,
+            )
+            self._hotkey_entry = ttk.Entry(
+                main,
+                textvariable=self._hotkey_var,
+                width=22,
+                state="readonly",
+            )
+            self._hotkey_entry.grid(row=row, column=1, sticky="ew", **pad)
+            self._record_btn = ttk.Button(
+                main,
+                text="Record",
+                width=8,
+                command=self._start_record,
+            )
+            self._record_btn.grid(row=row, column=2, **pad)
+            return row + 1
+
+        self._key_choices = mac_keycodes.selectable_keys()
+        self._key_var = tk.StringVar()
+        ttk.Label(main, text="Toggle microphone").grid(
+            row=row,
+            column=0,
+            sticky="w",
+            **pad,
+        )
+        combo = ttk.Combobox(
+            main,
+            textvariable=self._key_var,
+            values=[label for label, _ in self._key_choices],
+            state="readonly",
+            width=18,
+        )
+        combo.grid(row=row, column=1, columnspan=2, sticky="ew", **pad)
+        combo.bind("<<ComboboxSelected>>", lambda _e: self._update_preview())
+        row += 1
+
+        self._mod_vars = {
+            "control": tk.BooleanVar(),
+            "option": tk.BooleanVar(),
+            "shift": tk.BooleanVar(),
+            "command": tk.BooleanVar(),
+        }
+        mods = ttk.Frame(main)
+        mods.grid(row=row, column=1, columnspan=2, sticky="w", padx=10, pady=4)
+        for text, key in (
+            ("⌃ Control", "control"),
+            ("⌥ Option", "option"),
+            ("⇧ Shift", "shift"),
+            ("⌘ Command", "command"),
+        ):
+            ttk.Checkbutton(
+                mods,
+                text=text,
+                variable=self._mod_vars[key],
+                command=self._update_preview,
+            ).pack(side=tk.LEFT, padx=(0, 8))
+        ttk.Label(main, text="Modifiers").grid(row=row, column=0, sticky="w", **pad)
+        row += 1
+
+        ttk.Label(main, text="Shortcut").grid(row=row, column=0, sticky="w", **pad)
+        self._preview = ttk.Label(main, textvariable=self._hotkey_var, font=HEADING_FONT)
+        self._preview.grid(row=row, column=1, columnspan=2, sticky="w", **pad)
+        return row + 1
+
+    def _current_hotkey(self) -> str:
+        """Return the hotkey string described by the macOS controls."""
+        label = self._key_var.get()
+        token = next(
+            (tok for lab, tok in self._key_choices if lab == label),
+            self._key_choices[0][1],
+        )
+        return mac_keycodes.build(
+            token,
+            self._mod_vars["control"].get(),
+            self._mod_vars["option"].get(),
+            self._mod_vars["shift"].get(),
+            self._mod_vars["command"].get(),
+        )
+
+    def _update_preview(self):
+        """Show the selected shortcut in Mac notation."""
+        self._hotkey_var.set(mac_keycodes.describe(self._current_hotkey()))
 
     def _add_file_row(
         self,
@@ -220,7 +295,25 @@ class SettingsWindow(tk.Toplevel):
         ).grid(row=row, column=2, padx=10, pady=4)
 
     def _load_values(self):
-        self._hotkey_var.set(self._config.get("hotkey", "F13"))
+        saved = self._config.get("hotkey", "F13")
+        if IS_MACOS:
+            try:
+                token, control, option, shift, command = mac_keycodes.split(saved)
+            except ValueError:
+                token, control, option, shift, command = "f13", False, False, False, False
+            label = next(
+                (lab for lab, tok in self._key_choices if tok == token),
+                self._key_choices[0][0],
+            )
+            self._key_var.set(label)
+            self._mod_vars["control"].set(control)
+            self._mod_vars["option"].set(option)
+            self._mod_vars["shift"].set(shift)
+            self._mod_vars["command"].set(command)
+            self._update_preview()
+        else:
+            self._hotkey_var.set(saved)
+
         self._on_icon_var.set(self._config.get("mic_on_icon") or "")
         self._off_icon_var.set(self._config.get("mic_off_icon") or "")
         self._on_sound_var.set(self._config.get("mic_on_sound") or "")
@@ -246,7 +339,8 @@ class SettingsWindow(tk.Toplevel):
         self._hotkey_var.set("Press keys... (Esc to cancel)")
         self._hotkey_entry.configure(state="readonly")
 
-        self._hotkey_mgr.unregister()
+        if self._hotkey_mgr:
+            self._hotkey_mgr.unregister()
 
         def capture():
             current_hotkey = self._config.get("hotkey", "F13")
@@ -273,10 +367,20 @@ class SettingsWindow(tk.Toplevel):
 
     def _save(self):
         """Validate and save settings."""
-        hotkey = self._hotkey_var.get().strip()
-        if not hotkey or "Press keys" in hotkey:
-            messagebox.showwarning("Warning", "Please record a hotkey first.", parent=self)
-            return
+        if IS_MACOS:
+            hotkey = self._current_hotkey()
+            try:
+                mac_keycodes.parse(hotkey)
+            except ValueError as e:
+                messagebox.showwarning("Warning", str(e), parent=self)
+                return
+        else:
+            hotkey = self._hotkey_var.get().strip()
+            if not hotkey or "Press keys" in hotkey:
+                messagebox.showwarning(
+                    "Warning", "Please record a hotkey first.", parent=self
+                )
+                return
 
         on_icon = self._on_icon_var.get().strip()
         off_icon = self._off_icon_var.get().strip()
