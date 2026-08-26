@@ -20,13 +20,13 @@ jobs:
     name: Source archives
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Build per-platform source archives
         run: python scripts/package.py --clean
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: source-archives
           path: dist/*.zip
@@ -35,8 +35,8 @@ jobs:
     name: macOS app bundle
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Check tkinter is available
@@ -58,7 +58,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/Mic Mute Tray.app" \
             "dist/MicMuteTray-macos-arm64-v${VERSION}.zip"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-app
           path: dist/MicMuteTray-macos-arm64-v*.zip
@@ -67,8 +67,8 @@ jobs:
     name: Windows executable
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install dependencies
@@ -83,7 +83,7 @@ jobs:
         run: |
           VERSION=$(cat VERSION)
           mv dist/MicMuteTray.exe "dist/MicMuteTray-windows-x64-v${VERSION}.exe"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-exe
           path: dist/MicMuteTray-windows-x64-v*.exe
@@ -94,8 +94,8 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Open a draft release
