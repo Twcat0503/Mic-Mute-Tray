@@ -6,6 +6,7 @@ insists on owning a main loop of its own, so it runs as a short lived child
 process instead of fighting AppKit for the main thread.
 """
 
+import importlib.util
 import os
 import subprocess
 import sys
@@ -157,7 +158,8 @@ class MenuBarApp:
         """Sync the status item with the microphone state."""
         if not self._mic_available or not self._mic:
             objc.msg(None, c_void_p)(
-                self._status_line, objc.sel("setTitle:"),
+                self._status_line,
+                objc.sel("setTitle:"),
                 objc.nsstring("Microphone unavailable"),
             )
             if force:
@@ -165,11 +167,10 @@ class MenuBarApp:
                     "mic.slash", "Microphone unavailable", _SYMBOL_POINT_SIZE
                 )
                 if image:
-                    objc.msg(None, c_void_p)(
-                        self._button, objc.sel("setImage:"), image
-                    )
+                    objc.msg(None, c_void_p)(self._button, objc.sel("setImage:"), image)
                 objc.msg(None, c_void_p)(
-                    self._button, objc.sel("setToolTip:"),
+                    self._button,
+                    objc.sel("setToolTip:"),
                     objc.nsstring(f"{self.APP_NAME} — Unavailable"),
                 )
             return
@@ -185,19 +186,20 @@ class MenuBarApp:
 
         status = "Muted" if muted else "Unmuted"
         objc.msg(None, c_void_p)(
-            self._button, objc.sel("setToolTip:"),
+            self._button,
+            objc.sel("setToolTip:"),
             objc.nsstring(f"{self.APP_NAME} — {status}"),
         )
         objc.msg(None, c_void_p)(
-            self._status_line, objc.sel("setTitle:"),
-            objc.nsstring(
-                "Microphone muted" if muted else "Microphone unmuted"
-            ),
+            self._status_line,
+            objc.sel("setTitle:"),
+            objc.nsstring("Microphone muted" if muted else "Microphone unmuted"),
         )
 
         hotkey = self._config.get("hotkey", "F13")
         objc.msg(None, c_void_p)(
-            self._toggle_item, objc.sel("setTitle:"),
+            self._toggle_item,
+            objc.sel("setTitle:"),
             objc.nsstring(f"Toggle Mute  ({mac_keycodes.describe(hotkey)})"),
         )
 
@@ -255,6 +257,20 @@ class MenuBarApp:
         """Open the settings dialog in its own process."""
         if self._settings_process is not None and self._settings_process.poll() is None:
             objc.activate_app()
+            return
+
+        # The dialog is Tk and runs on this same interpreter. Homebrew ships
+        # Python without _tkinter unless python-tk is installed, which would
+        # leave the dialog dying on launch with nothing on screen.
+        if importlib.util.find_spec("_tkinter") is None:
+            objc.show_alert(
+                "Settings needs Tkinter",
+                "This Python build has no Tkinter, so the settings window "
+                "cannot open.\n\n"
+                "If Python came from Homebrew, install the matching "
+                "python-tk formula.\n\n"
+                "The menu bar icon and the hotkey keep working without it.",
+            )
             return
 
         if getattr(sys, "frozen", False):

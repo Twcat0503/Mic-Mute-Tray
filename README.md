@@ -70,6 +70,7 @@
 
 - macOS 12 Monterey 或更新版本（選單列圖示使用 SF Symbols）
 - **不需要安裝任何第三方套件**
+- 設定視窗需要 Tkinter。macOS 內建的 `python3` 與 python.org 的安裝版都有；**Homebrew 的 Python 預設沒有**，需另外安裝對應的 `python-tk` formula。沒有 Tkinter 時選單列圖示與快速鍵仍可正常運作，只有設定視窗打不開（會跳出提示）。
 - **不需要「輔助使用」權限** — 全域快速鍵走 Carbon `RegisterEventHotKey`，這是 macOS 上唯一不需授權的系統層快速鍵 API
 
 ## 下載
@@ -291,6 +292,13 @@ scripts/              打包腳本與 PyInstaller spec
 - Windows：檢查隱私權設定中的麥克風存取權限
 - macOS：部分外接音訊介面不提供 mute 屬性，此時本工具會改為將輸入音量降到 0，取消靜音時還原原本音量
 - 確認輸入裝置未被停用
+
+### 設定視窗打不開
+
+- 多半是執行用的 Python 沒有 Tkinter，最常見於 Homebrew 安裝的 Python
+- 執行 `./install.sh` 會直接檢查並告訴你缺什麼
+- 安裝對應的 `python-tk` formula，或改用系統內建 `python3` 執行
+- 下載免安裝的 `.app` 版本則不受影響，Tkinter 已內含
 
 ### 開機自動啟動無效
 

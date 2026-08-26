@@ -73,6 +73,11 @@ Customize your experience:
 
 - macOS 12 Monterey or newer (the menu bar icons use SF Symbols)
 - **No third-party packages required**
+- The settings window needs Tkinter. The system `python3` and the
+  python.org installers include it; **Homebrew's Python does not** unless
+  you install the matching `python-tk` formula. Without it the menu bar
+  icon and hotkey still work and only the settings window is unavailable,
+  which the app reports with an alert.
 - **No Accessibility permission required** — the global hotkey uses Carbon
   `RegisterEventHotKey`, the one system-wide hotkey API on macOS that works
   without granting access
@@ -323,6 +328,15 @@ scripts/              Packaging script and PyInstaller specs
   drives the input volume to zero instead and restores the previous level on
   unmute
 - Confirm the input device is not disabled
+
+### The settings window does not open
+
+- Usually the Python running the app has no Tkinter, most often a
+  Homebrew Python
+- `./install.sh` checks for this and says what is missing
+- Install the matching `python-tk` formula, or run the app with the
+  system `python3`
+- The standalone `.app` download is unaffected; it bundles Tkinter
 
 ### Start at login does not work
 

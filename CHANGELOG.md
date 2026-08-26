@@ -47,6 +47,11 @@ First tagged release. Ships both platforms and downloadable builds.
 
 ### Notes
 
+- The settings window needs Tkinter. Homebrew's Python omits it unless
+  the `python-tk` formula is installed; the app detects this and says so
+  instead of failing silently. The menu bar agent itself never loads
+  Tkinter, so the icon and hotkey work either way.
+
 - The macOS build is not signed or notarized, so Gatekeeper blocks the first
   launch of the standalone app. See the README for how to open it.
 - On macOS the settings dialog opens as a separate process, because AppKit and

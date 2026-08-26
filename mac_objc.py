@@ -235,8 +235,16 @@ def stop_event_loop():
 
     NSEventTypeApplicationDefined = 15
     event = msg(
-        c_void_p, c_uint64, NSPoint, c_uint64, c_double, c_int64, c_void_p,
-        ctypes.c_short, c_int64, c_int64,
+        c_void_p,
+        c_uint64,
+        NSPoint,
+        c_uint64,
+        c_double,
+        c_int64,
+        c_void_p,
+        ctypes.c_short,
+        c_int64,
+        c_int64,
     )(
         cls("NSEvent"),
         sel(
@@ -274,3 +282,12 @@ def invalidate_timer(timer):
     """Stop a scheduled NSTimer."""
     if timer:
         msg(None)(timer, sel("invalidate"))
+
+
+def show_alert(title: str, message: str):
+    """Show a modal alert, for failures the user would not otherwise see."""
+    activate_app()
+    alert = msg(c_void_p)(msg(c_void_p)(cls("NSAlert"), sel("alloc")), sel("init"))
+    msg(None, c_void_p)(alert, sel("setMessageText:"), nsstring(title))
+    msg(None, c_void_p)(alert, sel("setInformativeText:"), nsstring(message))
+    msg(c_int64)(alert, sel("runModal"))
