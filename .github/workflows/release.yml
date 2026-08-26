@@ -1,12 +1,15 @@
 name: Release
 
-# Pushing a v* tag builds every artifact and opens a draft release.
-# Run it manually first (Actions > Release > Run workflow) to check the
-# builds without publishing anything.
+# Every pull request builds all three artifacts, so a broken build shows up
+# before it is merged. Pushing a v* tag builds them again and opens a draft
+# release.
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  pull_request:
   workflow_dispatch:
 
 permissions:
