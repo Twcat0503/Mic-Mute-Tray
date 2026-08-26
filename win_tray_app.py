@@ -1,6 +1,5 @@
 """System tray controller."""
 
-import os
 import threading
 import tkinter as tk
 from typing import Optional
@@ -45,14 +44,8 @@ class TrayApp:
 
     def _pick_image(self, muted: bool) -> Image.Image:
         """Choose the custom or bundled icon for the current mute state."""
-        if muted:
-            custom = self._config.get("mic_off_icon")
-            default = self._assets["mic_off"]
-        else:
-            custom = self._config.get("mic_on_icon")
-            default = self._assets["mic_on"]
-
-        path = custom if custom and os.path.isfile(custom) else default
+        default = self._assets["mic_off"] if muted else self._assets["mic_on"]
+        path = asset_generator.custom_icon_path(self._config, muted) or default
         try:
             return Image.open(path).convert("RGBA")
         except Exception:
@@ -98,15 +91,9 @@ class TrayApp:
             muted = self._mic.toggle()
             self._update_icon()
 
-            sound_key = "mic_off_sound" if muted else "mic_on_sound"
-            custom_sound = self._config.get(sound_key)
-            default_sound = self._assets["off_sound"] if muted else self._assets["on_sound"]
-            sound_path = (
-                custom_sound
-                if custom_sound and os.path.isfile(custom_sound)
-                else default_sound
+            self._sound.play(
+                asset_generator.resolve_sound_path(self._config, self._assets, muted)
             )
-            self._sound.play(sound_path)
         except Exception as e:
             print(f"[ERROR] Failed to toggle microphone: {e}")
 

@@ -2,9 +2,27 @@
 
 import json
 import os
+import sys
 from typing import Any
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+APP_NAME = "Mic Mute Tray"
+
+# Config has always lived beside the script. macOS keeps it in Application
+# Support instead, which is where Apple expects per-user app data, but an
+# existing side-by-side file is still read so upgrades lose nothing.
+_LOCAL_CONFIG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+
+def _default_config_file() -> str:
+    if sys.platform == "darwin":
+        support = os.path.expanduser(
+            os.path.join("~/Library/Application Support", APP_NAME)
+        )
+        return os.path.join(support, "config.json")
+    return _LOCAL_CONFIG
+
+
+CONFIG_FILE = _default_config_file()
 
 DEFAULT_CONFIG: dict = {
     "hotkey": "F13",
@@ -22,18 +40,22 @@ class ConfigManager:
         self._load()
 
     def _load(self):
-        if os.path.exists(CONFIG_FILE):
+        for path in (CONFIG_FILE, _LOCAL_CONFIG):
+            if not os.path.exists(path):
+                continue
             try:
-                with open(CONFIG_FILE, "r", encoding="utf-8") as fh:
+                with open(path, "r", encoding="utf-8") as fh:
                     saved = json.load(fh)
                     for key in DEFAULT_CONFIG:
                         if key in saved:
                             self._data[key] = saved[key]
+                return
             except (json.JSONDecodeError, OSError):
-                pass
+                continue
 
     def save(self):
         try:
+            os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
             with open(CONFIG_FILE, "w", encoding="utf-8") as fh:
                 json.dump(self._data, fh, indent=2, ensure_ascii=True)
         except OSError:

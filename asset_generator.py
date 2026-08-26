@@ -2,12 +2,29 @@
 
 import math
 import os
+import sys
 import struct
 import wave
 
-from PIL import Image, ImageDraw
+try:
+    from PIL import Image, ImageDraw
+except ImportError:  # macOS uses SF Symbols and does not need Pillow
+    Image = None
+    ImageDraw = None
 
-ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+def _base_dir() -> str:
+    """Return the directory holding bundled assets.
+
+    PyInstaller unpacks data files into `sys._MEIPASS`; a plain checkout keeps
+    them beside this module.
+    """
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled:
+        return bundled
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+ASSETS_DIR = os.path.join(_base_dir(), "assets")
 
 
 def ensure_assets() -> dict:
@@ -21,17 +38,18 @@ def ensure_assets() -> dict:
         "off_sound": os.path.join(ASSETS_DIR, "off.wav"),
     }
 
-    try:
-        if not os.path.exists(paths["mic_on"]):
-            _create_mic_icon(paths["mic_on"], active=True)
-    except Exception as e:
-        print(f"[WARN] Failed to create unmuted icon: {e}")
+    if Image is not None:
+        try:
+            if not os.path.exists(paths["mic_on"]):
+                _create_mic_icon(paths["mic_on"], active=True)
+        except Exception as e:
+            print(f"[WARN] Failed to create unmuted icon: {e}")
 
-    try:
-        if not os.path.exists(paths["mic_off"]):
-            _create_mic_icon(paths["mic_off"], active=False)
-    except Exception as e:
-        print(f"[WARN] Failed to create muted icon: {e}")
+        try:
+            if not os.path.exists(paths["mic_off"]):
+                _create_mic_icon(paths["mic_off"], active=False)
+        except Exception as e:
+            print(f"[WARN] Failed to create muted icon: {e}")
 
     try:
         if not os.path.exists(paths["on_sound"]):
@@ -136,3 +154,17 @@ def _create_tone(
                 f.writeframes(struct.pack("<h", int(sample * 32767)))
     except Exception as e:
         raise OSError(f"Failed to create sound {path}: {e}")
+
+
+def custom_icon_path(config, muted: bool):
+    """Return the user's icon for this state, or None to use the default."""
+    path = config.get("mic_off_icon" if muted else "mic_on_icon")
+    return path if path and os.path.isfile(path) else None
+
+
+def resolve_sound_path(config, assets: dict, muted: bool) -> str:
+    """Return the sound to play for this state, preferring the user's file."""
+    custom = config.get("mic_off_sound" if muted else "mic_on_sound")
+    if custom and os.path.isfile(custom):
+        return custom
+    return assets["off_sound"] if muted else assets["on_sound"]
