@@ -12,6 +12,8 @@ build/
 dist/
 *.egg-info/
 *.spec
+# ...but the hand-written build specs are source, not build output.
+!scripts/*.spec
 
 # Virtual environments
 .venv/

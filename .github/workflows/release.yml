@@ -1,0 +1,108 @@
+name: Release
+
+# Pushing a v* tag builds every artifact and opens a draft release.
+# Run it manually first (Actions > Release > Run workflow) to check the
+# builds without publishing anything.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  source:
+    name: Source archives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Build per-platform source archives
+        run: python scripts/package.py --clean
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-archives
+          path: dist/*.zip
+
+  macos:
+    name: macOS app bundle
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Check tkinter is available
+        # The settings dialog needs it; failing here is clearer than a
+        # bundle that dies the first time someone opens Settings.
+        run: python -c "import tkinter; print('tkinter', tkinter.TkVersion)"
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pyinstaller
+      - name: Build the app bundle
+        run: pyinstaller --noconfirm --distpath dist --workpath build/pyi scripts/macos.spec
+      - name: Verify the bundle is a menu bar agent
+        run: |
+          plutil -extract LSUIElement raw "dist/Mic Mute Tray.app/Contents/Info.plist"
+          test -f "dist/Mic Mute Tray.app/Contents/MacOS/Mic Mute Tray"
+      - name: Zip the bundle
+        run: |
+          VERSION=$(cat VERSION)
+          # ditto preserves the bundle's symlinks and ad-hoc signature.
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/Mic Mute Tray.app" \
+            "dist/MicMuteTray-macos-arm64-v${VERSION}.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-app
+          path: dist/MicMuteTray-macos-arm64-v*.zip
+
+  windows:
+    name: Windows executable
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install --upgrade pyinstaller
+      - name: Build the executable
+        run: pyinstaller --noconfirm --distpath dist --workpath build/pyi scripts/windows.spec
+      - name: Rename with the version
+        shell: bash
+        run: |
+          VERSION=$(cat VERSION)
+          mv dist/MicMuteTray.exe "dist/MicMuteTray-windows-x64-v${VERSION}.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: dist/MicMuteTray-windows-x64-v*.exe
+
+  release:
+    name: Publish release
+    needs: [source, macos, windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Open a draft release
+        # The bundled gh CLI keeps write access with the workflow instead of
+        # handing it to a third-party action.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --draft \
+            --generate-notes \
+            --title "${GITHUB_REF_NAME}" \
+            $(find artifacts -type f | sort)
