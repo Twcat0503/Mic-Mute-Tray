@@ -67,7 +67,8 @@ Keep one concern per commit.
 
 ## Testing
 
-There is no automated test suite. Before opening a pull request, check by hand
+Run the Windows regression tests with `python -m unittest discover -s tests -v`.
+Before opening a pull request, also check by hand
 on the platform you changed:
 
 1. The tray / menu bar icon appears and switches between both states

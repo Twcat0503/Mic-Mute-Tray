@@ -26,14 +26,16 @@ class TrayApp:
         self._hotkey_mgr = HotkeyManager()
         self._assets = asset_generator.ensure_assets()
         self._mic_available = False
+        self._muted = False
+        self._poll_id = None
+        self._last_status = None
+        self._mic = MicControl()
 
         try:
-            self._mic = MicControl()
-            self._mic.is_muted()
+            self._muted = self._mic.is_muted()
             self._mic_available = True
         except Exception as e:
             print(f"[WARN] Microphone control is unavailable: {e}")
-            self._mic = None
 
         self._icon: Optional[pystray.Icon] = None
         self._settings_win = None
@@ -41,6 +43,7 @@ class TrayApp:
 
         self._create_icon()
         self._register_hotkey()
+        self._poll_microphone()
 
     def _pick_image(self, muted: bool) -> Image.Image:
         """Choose the custom or bundled icon for the current mute state."""
@@ -53,32 +56,42 @@ class TrayApp:
 
     def _get_icon_image(self) -> Image.Image:
         """Return the current tray icon image."""
-        if self._mic_available and self._mic:
-            muted = self._mic.is_muted()
-        else:
-            muted = False
-        return self._pick_image(muted)
+        return self._pick_image(self._muted)
 
     def _update_icon(self):
         """Refresh tray icon image and tooltip text."""
         if not self._icon:
             return
         if self._mic_available and self._mic:
-            muted = self._mic.is_muted()
+            muted = self._muted
             status = "Muted" if muted else "Unmuted"
         else:
             muted = False
             status = "Unavailable"
         self._icon.icon = self._pick_image(muted)
         self._icon.title = f"{self.APP_NAME} - {status}"
+        self._icon.update_menu()
+
+    def _poll_microphone(self):
+        """Synchronize external changes and recover when a mic reconnects."""
+        try:
+            self._muted = self._mic.is_muted()
+            self._mic_available = True
+        except Exception:
+            self._mic_available = False
+        status = (self._mic_available, self._muted)
+        if status != self._last_status:
+            self._last_status = status
+            self._update_icon()
+        self._poll_id = self._root.after(1000, self._poll_microphone)
 
     def _register_hotkey(self):
         """Register the configured hotkey."""
-        if not self._mic_available:
-            return
         hotkey = self._config.get("hotkey", "F13")
         try:
-            self._hotkey_mgr.register(hotkey, self._on_toggle)
+            self._hotkey_mgr.register(
+                hotkey, lambda: self._root.after(0, self._on_toggle)
+            )
         except Exception as e:
             print(f"[WARN] Failed to register hotkey ({hotkey}): {e}")
 
@@ -89,6 +102,7 @@ class TrayApp:
 
         try:
             muted = self._mic.toggle()
+            self._muted = muted
             self._update_icon()
 
             self._sound.play(
@@ -102,20 +116,17 @@ class TrayApp:
 
         def _status_text(_item):
             if self._mic_available and self._mic:
-                return "Microphone muted" if self._mic.is_muted() else "Microphone unmuted"
+                return "Microphone muted" if self._muted else "Microphone unmuted"
             return "Microphone unavailable"
 
         menu_items = [
             MenuItem(_status_text, None, enabled=False),
             Menu.SEPARATOR,
+            MenuItem("Toggle Mute", lambda _icon, _item: self._root.after(0, self._on_toggle),
+                     enabled=lambda _item: self._mic_available),
             MenuItem("Settings", lambda _icon, _item: self._root.after(0, self._show_settings)),
             Menu.SEPARATOR,
         ]
-        if not self._mic_available:
-            menu_items.append(
-                MenuItem("Microphone control is unavailable", None, enabled=False)
-            )
-            menu_items.append(Menu.SEPARATOR)
         menu_items.append(MenuItem("Quit", lambda _icon, _item: self._root.after(0, self._quit)))
 
         menu = Menu(*menu_items)
@@ -156,6 +167,9 @@ class TrayApp:
         self._update_icon()
 
     def _quit(self):
+        if self._poll_id is not None:
+            self._root.after_cancel(self._poll_id)
+            self._poll_id = None
         self._hotkey_mgr.unregister()
         self._sound.cleanup()
         if self._icon:

@@ -85,6 +85,18 @@ def run_windows() -> bool:
     return True
 
 
+def check_windows_bundle() -> bool:
+    """Exercise bundled Tk resources and Windows imports without opening the tray."""
+    import tkinter as tk
+
+    import win_tray_app
+
+    root = tk.Tk()
+    root.withdraw()
+    root.destroy()
+    return True
+
+
 def main():
     """Dispatch to the settings dialog or the platform's tray front end."""
     try:
@@ -102,4 +114,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--check-windows-bundle" in sys.argv:
+        try:
+            raise SystemExit(0 if check_windows_bundle() else 1)
+        except Exception as error:
+            if sys.stderr:
+                print(f"[ERROR] Bundle check failed: {error}", file=sys.stderr)
+            raise SystemExit(1)
+    raise SystemExit(0 if main() else 1)

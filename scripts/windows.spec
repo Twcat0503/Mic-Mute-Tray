@@ -1,6 +1,10 @@
 # PyInstaller spec for the Windows tray app.
 # Build:  pyinstaller scripts/windows.spec
 import os
+from PyInstaller.utils.hooks.tcl_tk import tcltk_info
+
+if not tcltk_info.available:
+    raise RuntimeError("Python is missing working Tcl/Tk resources. Install a Python build with Tkinter before packaging.")
 
 ROOT = os.path.abspath(os.path.join(SPECPATH, ".."))
 

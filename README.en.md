@@ -40,9 +40,9 @@
 | Microphone control | Core Audio API (`pycaw`) | Core Audio HAL (`ctypes`) |
 | Global hotkey | `keyboard` package | Carbon `RegisterEventHotKey` |
 | Tray / menu bar | `pystray` | `NSStatusItem` (AppKit) |
-| Sound playback | `pygame` | `NSSound` |
+| Sound playback | `winsound` | `NSSound` |
 | Start at login | Registry `HKCU\...\Run` | launchd LaunchAgent |
-| Third-party dependencies | 6 packages | **None, standard library only** |
+| Third-party dependencies | 5 packages | **None, standard library only** |
 
 ## Recommended for Custom Keyboard Users
 
@@ -67,6 +67,7 @@ Customize your experience:
 **Windows**
 
 - Windows 10 or Windows 11
+- Python with Tkinter (`install.bat` checks for it)
 - Python packages listed in `requirements.txt`
 
 **macOS**
@@ -84,8 +85,7 @@ Customize your experience:
 
 ## Download
 
-Head to **[Releases](https://github.com/twcat0503/Mic-Mute-Tray/releases/latest)**. Every version ships two forms for each
-platform, and **the two platforms are kept completely separate**.
+Once published, downloads are available under **[Releases](https://github.com/twcat0503/Mic-Mute-Tray/releases)**. CI first creates a draft; files become public only after a maintainer reviews and publishes it. Every version ships two forms for each platform, and **the two platforms are kept completely separate**.
 
 ### Standalone executables (no Python needed)
 
@@ -93,6 +93,8 @@ platform, and **the two platforms are kept completely separate**.
 |---|---|
 | Windows 10 / 11 | `MicMuteTray-windows-x64-vX.Y.Z.exe` |
 | macOS (Apple Silicon) | `MicMuteTray-macos-arm64-vX.Y.Z.zip` |
+
+The Windows executable targets x64; the macOS bundle targets Apple Silicon. For other architectures, try running from source.
 
 > **macOS blocks the first launch**
 >
@@ -135,7 +137,7 @@ covering both platforms).
 install.bat
 ```
 
-Manual install:
+Manual install (if you do not use the `.venv` created by `install.bat`):
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -172,6 +174,8 @@ For troubleshooting, run it directly from a terminal:
 ```bash
 python3 main.py
 ```
+
+On Windows, after running `install.bat`, use `.venv\Scripts\python.exe main.py` in a terminal to see errors.
 
 ## Usage
 
@@ -260,16 +264,18 @@ uvx --python "$(which python3)" --from pyinstaller pyinstaller \
   --noconfirm --distpath dist --workpath build/pyi scripts/macos.spec
 ```
 
-**Windows `.exe`** (must run on Windows): install the dependencies and
-`pyinstaller` via `install.bat` first, then:
+**Windows `.exe`** (must run on Windows): install the runtime dependencies via
+`install.bat` first, then:
 
 ```bat
-pyinstaller --noconfirm --distpath dist --workpath build/pyi scripts/windows.spec
+.venv\Scripts\python.exe -m pip install pyinstaller
+.venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath dist --workpath build/pyi scripts/windows.spec
 ```
 
 PyInstaller cannot cross-compile, so `.github/workflows/release.yml` builds
-each platform on its own GitHub Actions runner when a `v*` tag is pushed, then
-gathers everything into one draft release.
+each platform on its own GitHub Actions runner when a `v*` tag matching `VERSION`
+is pushed, then gathers everything into one draft release. A maintainer must
+review and publish the draft before downloads appear on the release page.
 
 ## Project Structure
 
@@ -287,7 +293,7 @@ startup_manager.py    Start at login — platform dispatch
 win_tray_app.py       Windows system tray (pystray)
 win_mic_control.py    Windows microphone control (pycaw)
 win_hotkey.py         Windows global hotkey (keyboard)
-win_sound.py          Windows sound playback (pygame)
+win_sound.py          Windows sound playback (winsound)
 win_startup.py        Windows startup registry helper
 
 mac_app.py            macOS menu bar agent (NSStatusItem)
@@ -331,7 +337,8 @@ scripts/              Packaging script and PyInstaller specs
 
 ### The settings window does not open
 
-- Usually the Python running the app has no Tkinter, most often a
+- Windows: run `install.bat` and make sure Python has Tkinter; for errors, run `.venv\Scripts\python.exe main.py` from a terminal
+- On macOS, usually the Python running the app has no Tkinter, most often a
   Homebrew Python
 - `./install.sh` checks for this and says what is missing
 - Install the matching `python-tk` formula, or run the app with the
@@ -349,3 +356,5 @@ scripts/              Packaging script and PyInstaller specs
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+Report problems through [GitHub Issues](https://github.com/twcat0503/Mic-Mute-Tray/issues). To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).

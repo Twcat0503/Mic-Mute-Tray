@@ -40,9 +40,9 @@
 | 麥克風控制 | Core Audio API（`pycaw`） | Core Audio HAL（`ctypes`） |
 | 全域快速鍵 | `keyboard` 套件 | Carbon `RegisterEventHotKey` |
 | 托盤／選單列 | `pystray` | `NSStatusItem`（AppKit） |
-| 音效播放 | `pygame` | `NSSound` |
+| 音效播放 | `winsound` | `NSSound` |
 | 開機啟動 | 登錄檔 `HKCU\...\Run` | launchd LaunchAgent |
-| 第三方相依 | 6 個套件 | **無，只用標準函式庫** |
+| 第三方相依 | 5 個套件 | **無，只用標準函式庫** |
 
 ## 推薦給客製化鍵盤玩家
 
@@ -64,6 +64,7 @@
 **Windows**
 
 - Windows 10 或 Windows 11
+- Python 需包含 Tkinter（`install.bat` 會檢查）
 - `requirements.txt` 中所列的 Python 套件
 
 **macOS**
@@ -75,7 +76,7 @@
 
 ## 下載
 
-前往 **[Releases](https://github.com/twcat0503/Mic-Mute-Tray/releases/latest)** 下載。每個版本針對 Windows 與 macOS 各提供兩種形式，**兩個平台的檔案完全分開**。
+正式發布後，可從 **[Releases](https://github.com/twcat0503/Mic-Mute-Tray/releases)** 下載。CI 會先建立草稿，維護者確認並發布後，檔案才會公開。每個版本針對 Windows 與 macOS 各提供兩種形式，**兩個平台的檔案完全分開**。
 
 ### 免安裝執行檔（不需安裝 Python）
 
@@ -83,6 +84,8 @@
 |---|---|
 | Windows 10 / 11 | `MicMuteTray-windows-x64-vX.Y.Z.exe` |
 | macOS（Apple Silicon） | `MicMuteTray-macos-arm64-vX.Y.Z.zip` |
+
+Windows 執行檔為 x64；macOS 執行檔僅支援 Apple Silicon。其他架構可嘗試原始碼版本。
 
 > **macOS 首次開啟會被擋下**
 >
@@ -121,7 +124,7 @@ cd Mic-Mute-Tray
 install.bat
 ```
 
-手動安裝：
+手動安裝（若不使用 `install.bat` 建立的 `.venv`）：
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -156,6 +159,8 @@ launch.bat
 ```bash
 python3 main.py
 ```
+
+Windows 使用 `install.bat` 安裝時，請改在終端機執行 `.venv\Scripts\python.exe main.py` 以查看錯誤訊息。
 
 ## 使用方式
 
@@ -231,13 +236,14 @@ uvx --python "$(which python3)" --from pyinstaller pyinstaller \
   --noconfirm --distpath dist --workpath build/pyi scripts/macos.spec
 ```
 
-**Windows `.exe`**（需在 Windows 上執行）：先用 `install.bat` 裝好相依套件與 `pyinstaller`，再執行：
+**Windows `.exe`**（需在 Windows 上執行）：先用 `install.bat` 裝好執行相依套件，再執行：
 
 ```bat
-pyinstaller --noconfirm --distpath dist --workpath build/pyi scripts/windows.spec
+.venv\Scripts\python.exe -m pip install pyinstaller
+.venv\Scripts\python.exe -m PyInstaller --noconfirm --distpath dist --workpath build/pyi scripts/windows.spec
 ```
 
-PyInstaller 無法跨平台編譯，因此 `.github/workflows/release.yml` 會在推送 `v*` tag 時，由 GitHub Actions 的 windows 與 macOS runner 各自建置，再彙整成一個 draft release。
+PyInstaller 無法跨平台編譯，因此 `.github/workflows/release.yml` 會在推送與 `VERSION` 相符的 `v*` tag 時，由 GitHub Actions 的 Windows 與 macOS runner 各自建置，再彙整成草稿版本。維護者需確認檔案後發布草稿，下載頁才會顯示該版本。
 
 ## 專案結構
 
@@ -255,7 +261,7 @@ startup_manager.py    開機啟動 — 平台分派
 win_tray_app.py       Windows 系統托盤（pystray）
 win_mic_control.py    Windows 麥克風控制（pycaw）
 win_hotkey.py         Windows 全域快速鍵（keyboard）
-win_sound.py          Windows 音效播放（pygame）
+win_sound.py          Windows 音效播放（winsound）
 win_startup.py        Windows 開機啟動（登錄檔）
 
 mac_app.py            macOS 選單列 agent（NSStatusItem）
@@ -295,7 +301,8 @@ scripts/              打包腳本與 PyInstaller spec
 
 ### 設定視窗打不開
 
-- 多半是執行用的 Python 沒有 Tkinter，最常見於 Homebrew 安裝的 Python
+- Windows：執行 `install.bat`，確認使用的 Python 含 Tkinter；若要除錯，從終端機執行 `.venv\Scripts\python.exe main.py`
+- macOS 多半是執行用的 Python 沒有 Tkinter，最常見於 Homebrew 安裝的 Python
 - 執行 `./install.sh` 會直接檢查並告訴你缺什麼
 - 安裝對應的 `python-tk` formula，或改用系統內建 `python3` 執行
 - 下載免安裝的 `.app` 版本則不受影響，Tkinter 已內含
@@ -310,3 +317,5 @@ scripts/              打包腳本與 PyInstaller spec
 ## 授權條款
 
 MIT License。詳見 [LICENSE](LICENSE)。
+
+問題回報請使用 [GitHub Issues](https://github.com/twcat0503/Mic-Mute-Tray/issues)；參與開發請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。

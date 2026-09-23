@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-23
+
+### Fixed
+
+- Windows installer now creates a local environment and checks the Python version and Tkinter before installing dependencies.
+- The standalone Windows executable stores configuration beside the executable.
+- Microphone API errors now reach the tray controller, COM is initialized for each operation, and the tray recovers when the default input device returns.
+- The Windows tray follows mute changes made by other applications and provides a menu action to toggle mute.
+- Windows WAV notifications use the standard library, reducing runtime dependencies.
+- Release CI runs Windows regression and packaged executable smoke tests, checks the tag against `VERSION`, and can refresh an existing draft safely.
+- The READMEs explain that downloads appear only after a draft release is published.
+
 ## [1.0.0] - 2026-08-26
 
-First tagged release. Ships both platforms and downloadable builds.
+First tagged build. CI produced Windows and macOS artifacts in a draft release.
 
 ### Added
 
@@ -42,8 +54,8 @@ First tagged release. Ships both platforms and downloadable builds.
   `pycaw` never loads on macOS and AppKit is never touched on Windows.
 - `requirements.txt` marks every package as Windows-only. macOS installs
   nothing.
-- Pillow is optional; it is only needed to generate the default Windows tray
-  icons.
+- Pillow provides the Windows tray icons and generates replacements if bundled
+  icons are missing.
 
 ### Notes
 
@@ -57,5 +69,6 @@ First tagged release. Ships both platforms and downloadable builds.
 - On macOS the settings dialog opens as a separate process, because AppKit and
   Tkinter cannot share a main thread. The resident agent never loads Tkinter.
 
-[Unreleased]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/twcat0503/Mic-Mute-Tray/releases/tag/v1.0.0

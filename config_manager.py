@@ -19,6 +19,8 @@ def _default_config_file() -> str:
             os.path.join("~/Library/Application Support", APP_NAME)
         )
         return os.path.join(support, "config.json")
+    if getattr(sys, "frozen", False):
+        return os.path.join(os.path.dirname(sys.executable), "config.json")
     return _LOCAL_CONFIG
 
 
