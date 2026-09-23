@@ -82,4 +82,4 @@ First tagged build. CI produced Windows and macOS artifacts in a draft release.
 [Unreleased]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.2...HEAD
 [1.0.2]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/twcat0503/Mic-Mute-Tray/releases/tag/v1.0.0
+[1.0.0]: https://github.com/twcat0503/Mic-Mute-Tray/tree/v1.0.0
