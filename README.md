@@ -87,6 +87,8 @@
 
 Windows 執行檔為 x64；macOS 執行檔僅支援 Apple Silicon。其他架構可嘗試原始碼版本。
 
+每個平台另附 `MicMuteTray-<platform>-licenses-vX.Y.Z.zip`，收錄建置環境中各元件的實際版本與授權文件，涵蓋免安裝版本使用的套件。詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
 > **macOS 首次開啟會被擋下**
 >
 > 本 app 未經 Apple 開發者簽章與公證，Gatekeeper 會顯示「無法打開，因為無法驗證開發者」。
@@ -316,6 +318,6 @@ scripts/              打包腳本與 PyInstaller spec
 
 ## 授權條款
 
-MIT License。詳見 [LICENSE](LICENSE)。
+本專案原始碼採 MIT License，詳見 [LICENSE](LICENSE)。免安裝版本所含第三方元件沿用各自授權，詳見 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 問題回報請使用 [GitHub Issues](https://github.com/twcat0503/Mic-Mute-Tray/issues)；參與開發請先閱讀 [CONTRIBUTING.md](CONTRIBUTING.md)。

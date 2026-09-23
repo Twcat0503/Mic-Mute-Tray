@@ -28,6 +28,7 @@ SHARED = [
     "README.en.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
+    "THIRD_PARTY_NOTICES.md",
     "LICENSE",
     "VERSION",
 ]
@@ -115,7 +116,8 @@ def verify(archive: str, platform: str):
         raise SystemExit(f"[package] {platform} archive leaked {forbidden}* files: {leaked}")
 
     for required in (
-        "main.py", f"{ASSET_DIR}/mic_on.png", "LICENSE", "CONTRIBUTING.md"
+        "main.py", f"{ASSET_DIR}/mic_on.png", "LICENSE", "CONTRIBUTING.md",
+        "THIRD_PARTY_NOTICES.md",
     ):
         if not any(n.endswith(required) for n in names):
             raise SystemExit(f"[package] {platform} archive is missing {required}")

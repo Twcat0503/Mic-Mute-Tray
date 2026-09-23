@@ -96,6 +96,8 @@ Once published, downloads are available under **[Releases](https://github.com/tw
 
 The Windows executable targets x64; the macOS bundle targets Apple Silicon. For other architectures, try running from source.
 
+Each platform also provides `MicMuteTray-<platform>-licenses-vX.Y.Z.zip` with installed component versions and license files from the build environment, including the packages used by the standalone app. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 > **macOS blocks the first launch**
 >
 > The app is not signed or notarized with an Apple Developer account, so
@@ -355,6 +357,6 @@ scripts/              Packaging script and PyInstaller specs
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+The project's own source code uses the MIT License; see [LICENSE](LICENSE). Bundled third-party components retain their own licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Report problems through [GitHub Issues](https://github.com/twcat0503/Mic-Mute-Tray/issues). To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).

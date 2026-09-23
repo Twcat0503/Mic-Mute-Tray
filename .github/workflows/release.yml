@@ -58,10 +58,14 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent \
             "dist/Mic Mute Tray.app" \
             "dist/MicMuteTray-macos-arm64-v${VERSION}.zip"
+      - name: Collect bundled component licenses
+        run: python scripts/collect_licenses.py --platform macos
       - uses: actions/upload-artifact@v7
         with:
           name: macos-app
-          path: dist/MicMuteTray-macos-arm64-v*.zip
+          path: |
+            dist/MicMuteTray-macos-arm64-v*.zip
+            dist/MicMuteTray-macos-licenses-v*.zip
 
   windows:
     name: Windows executable
@@ -87,10 +91,14 @@ jobs:
           mv dist/MicMuteTray.exe "dist/MicMuteTray-windows-x64-v${VERSION}.exe"
       - name: Smoke-test the packaged executable
         run: python scripts/smoke_windows.py
+      - name: Collect bundled component licenses
+        run: python scripts/collect_licenses.py --platform windows
       - uses: actions/upload-artifact@v7
         with:
           name: windows-exe
-          path: dist/MicMuteTray-windows-x64-v*.exe
+          path: |
+            dist/MicMuteTray-windows-x64-v*.exe
+            dist/MicMuteTray-windows-licenses-v*.zip
 
   release:
     name: Publish release
@@ -112,7 +120,7 @@ jobs:
         run: |
           test "${GITHUB_REF_NAME}" = "v$(cat VERSION)"
           mapfile -d '' files < <(find artifacts -type f -print0 | sort -z)
-          test "${#files[@]}" -eq 4
+          test "${#files[@]}" -eq 6
           if gh release view "${GITHUB_REF_NAME}" --json isDraft --jq .isDraft > release-state.txt; then
             if [ "$(cat release-state.txt)" != true ]; then
               echo 'Release is already public; refusing to replace its assets.' >&2

@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.0.1] - 2026-09-23
+## [1.0.2] - 2026-09-23
+
+Includes the unpublished `v1.0.1` draft fixes and third-party license
+information for standalone downloads.
+
+### Added
+
+- `THIRD_PARTY_NOTICES.md` and per-platform license archives containing the
+  license files and exact package versions from each build environment.
+
+## [1.0.1] - 2026-09-23 (unpublished draft)
 
 ### Fixed
 
@@ -69,6 +79,7 @@ First tagged build. CI produced Windows and macOS artifacts in a draft release.
 - On macOS the settings dialog opens as a separate process, because AppKit and
   Tkinter cannot share a main thread. The resident agent never loads Tkinter.
 
-[Unreleased]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/twcat0503/Mic-Mute-Tray/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/twcat0503/Mic-Mute-Tray/releases/tag/v1.0.0

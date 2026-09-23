@@ -6,3 +6,6 @@
 *.png binary
 *.ico binary
 *.wav binary
+
+# Preserve verbatim upstream license text, including its original whitespace.
+licenses/*.txt -whitespace
